@@ -1,4 +1,4 @@
-# Fichário Holo
+# Fichário TCG
 
 Controle da coleção de Pokémon TCG com o menor preço da LigaPokemon (português, NM).
 

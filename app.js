@@ -37,7 +37,7 @@ function renderResumo(){const t=totals();
   $("#h-sub").textContent="Menor preço da LigaPokemon em português, estado NM"+(state.pdate?" · atualizado em "+br(state.pdate):"")+".";
   $("#s-cards").textContent=t.own+" / "+t.all;$("#s-miss").textContent=fmtK(t.miss);$("#s-inv").textContent=fmtK(t.inv);
   $("#sets").innerHTML=SETS.map(s=>{const p=t.per[s.id];const f=p.all?p.own/p.all:0;
-    return `<button class="setrow" type="button" data-goset="${s.id}"><span class="code">${s.id}</span><span style="min-width:0"><span class="nm">${s.name}</span><span class="bar"><i class="${f>=1?"full":""}" style="width:${(f*100).toFixed(1)}%"></i></span><span class="meta">${p.own} de ${p.all} · faltam ${p.all-p.own}</span></span><span class="val">${fmtK(p.val)}<small>${p.all-p.own?"faltam "+fmtK(p.miss):"completa"}</small></span></button>`}).join("");
+    const left=p.all-p.own;return `<button class="setrow" type="button" data-goset="${s.id}"><span class="nm">${s.name}<span class="code">${s.id}</span></span><span class="val">${fmtK(p.val)}</span><span class="bar"><i class="${f>=1?"full":""}" style="width:${(f*100).toFixed(1)}%"></i></span><span class="meta">${p.own} de ${p.all} cartas</span><span class="miss ${left?"":"done"}">${left?(left===1?"Falta 1":"Faltam "+left)+" · "+fmtK(p.miss):"Completa"}</span></button>`}).join("");
   renderSpark();renderMovers();renderBuys()}
 function renderSpark(){const svg=$("#spark");const pts=state.history.filter(x=>x.total>0);
   if(pts.length<2){svg.innerHTML=`<text x="0" y="50" fill="var(--ink-3)" font-size="12">O gráfico ganha forma a partir da próxima atualização diária.</text>`;return}
@@ -60,16 +60,19 @@ function renderBuys(){const arr=[];for(const s of SETS)for(const [n,o] of Object
   $("#buys").innerHTML=arr.length?arr.slice(0,30).map(a=>{const p=price(a.s,a.n);const d=p!=null?(p-a.o.paid):null;
     return `<button class="li" type="button" data-card="${a.s}|${a.n}">${mini(a.s,a.n)}<span style="min-width:0"><span class="t">${nameOf(a.s,a.n)}</span><span class="s">${br(a.o.d)} · pago ${fmt(a.o.paid)}</span></span><span class="r">${fmt(p)}${d!=null?`<small class="${d>=0?"up":"down"}">${d>=0?"+":"−"}${fmt(Math.abs(d))}</small>`:""}</span></button>`}).join(""):`<div class="note">Quando você registrar uma carta comprada, ela aparece aqui com o valor pago e quanto vale hoje.</div>`}
 
-function renderChips(){$("#setchips").innerHTML=SETS.map(s=>`<button class="chip" type="button" data-set="${s.id}" aria-pressed="${s.id===state.set}">${s.short}</button>`).join("");
+function renderChips(){$("#setchips").innerHTML=SETS.map(s=>{const m=cardsOf(s.id).filter(c=>!isOwned(s.id,c[0])).length;return `<button class="chip" type="button" data-set="${s.id}" aria-pressed="${s.id===state.set}">${s.short}${m?`<span class="n">−${m}</span>`:" ✓"}</button>`}).join("");
   document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===state.filter))}
 function norm(s){return (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase()}
 function renderGrid(){renderChips();const q=norm(state.q.trim());const sets=q?SETS:[SETBY[state.set]];let html="",shown=0,own=0,tot=0;
   for(const s of sets){cardsOf(s.id).forEach(c=>{const [n,pt,en,idx]=c;const o=isOwned(s.id,n);
     if(q&&!(norm(pt).includes(q)||norm(en).includes(q)||n.includes(q)||(s.id+" "+n).toLowerCase().includes(q)))return;
     tot++;if(o)own++;if(state.filter==="own"&&!o)return;if(state.filter==="miss"&&o)return;shown++;const p=price(s.id,n);
-    html+=`<button class="pocket ${o?"own":"miss"}" type="button" data-card="${s.id}|${n}" aria-label="${(pt||en).replace(/"/g,"")} ${n}${o?"":" (falta)"}"><span class="slot"><span class="thumb" style="${thumbStyle(s.id,idx)}"></span></span><span class="cap"><span class="n">${q?s.id+" ":""}${n}</span><span class="p">${p!=null?fmt(p):"—"}</span></span></button>`})}
+    html+=`<button class="pocket ${o?"own":"miss"}" type="button" data-card="${s.id}|${n}" aria-label="${(pt||en).replace(/"/g,"")} ${n}${o?", você tem":", falta"}${p!=null?", "+fmt(p):""}"><span class="sleeve"><span class="thumb" style="${thumbStyle(s.id,idx)}"></span></span><span class="cap"><span class="n">${q?s.id+" ":""}${n}</span><span class="p">${p!=null?fmt(p):"sem preço"}</span></span></button>`})}
   const s=SETBY[state.set];
-  $("#bhead").innerHTML=q?`<span><b>${shown}</b> resultado${shown===1?"":"s"} para “${state.q.trim()}”</span>`:`<span><b>${s.name}</b> · ${s.total?s.total+" no set principal":"promos"}</span><span>${own} de ${tot}</span>`;
+  const legend=`<div class="legend"><span><i class="lo"></i>Em cores: você tem</span><span><i class="lm"></i>Apagada: falta</span></div>`;
+  if(q){$("#bhead").innerHTML=`<h3>${shown} resultado${shown===1?"":"s"}</h3><div class="facts"><span>para “${state.q.trim().replace(/</g,"&lt;")}” em todas as coleções</span></div>${legend}`}
+  else{let mv=0;cardsOf(s.id).forEach(c=>{if(!isOwned(s.id,c[0])){const p=price(s.id,c[0]);if(p!=null)mv+=p}});const left=tot-own;
+    $("#bhead").innerHTML=`<h3>${s.name}</h3><div class="facts"><span>Você tem <b>${own} de ${tot}</b></span>${left?`<span class="w">Faltam <b>${left}</b> · <b>${fmt(mv)}</b> para completar</span>`:`<span><b>Coleção completa</b></span>`}</div><div class="pbar"><i style="width:${tot?own/tot*100:0}%"></i></div>${legend}`}
   $("#grid").innerHTML=html||`<div class="empty" style="grid-column:1/-1"><b>Nada por aqui</b>${state.filter==="miss"?"Você já tem todas as cartas desta coleção.":"Tente outro nome ou número."}</div>`}
 
 function wantList(){const arr=[];for(const s of SETS){if(state.wset!=="ALL"&&state.wset!==s.id)continue;cardsOf(s.id).forEach(c=>{if(!isOwned(s.id,c[0]))arr.push({s:s.id,n:c[0],i:c[3],name:c[1]||c[2],p:price(s.id,c[0])})})}
@@ -77,7 +80,7 @@ function wantList(){const arr=[];for(const s of SETS){if(state.wset!=="ALL"&&sta
 function renderComprar(){const t=totals();$("#w-total").textContent=fmt(t.miss);$("#w-count").textContent=t.missN+" carta"+(t.missN===1?"":"s")+" faltando";
   $("#wchips").innerHTML=[{id:"ALL",short:"Todas"},...SETS].map(s=>`<button class="chip" type="button" data-wset="${s.id}" aria-pressed="${s.id===state.wset}">${s.short}</button>`).join("");
   const arr=wantList();
-  $("#wlist").innerHTML=arr.length?arr.map(a=>{const k=key(a.s,a.n);return `<div class="wrow"><button class="ck" type="button" role="checkbox" aria-checked="${state.sel.has(k)}" data-sel="${k}" aria-label="Selecionar ${a.name}"></button><span class="mini" style="${thumbStyle(a.s,a.i)}"></span><button class="info" type="button" data-card="${k}"><span class="t" style="font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.name}</span><span class="s" style="font-size:12px;color:var(--ink-3)">${SETBY[a.s].short} · ${a.n}${SETBY[a.s].total?"/"+String(SETBY[a.s].total).padStart(3,"0"):""}</span></button><span style="font-weight:700;white-space:nowrap">${a.p!=null?fmt(a.p):"sem anúncio"}</span></div>`}).join(""):`<div class="empty"><b>Coleção completa</b>Não falta nenhuma carta nesta seleção.</div>`;
+  $("#wlist").innerHTML=arr.length?arr.map(a=>{const k=key(a.s,a.n);return `<div class="wrow"><button class="ck" type="button" role="checkbox" aria-checked="${state.sel.has(k)}" data-sel="${k}" aria-label="Selecionar ${a.name}"></button><span class="mini" style="${thumbStyle(a.s,a.i)}"></span><button class="info" type="button" data-card="${k}"><span class="t">${a.name}</span><span class="s">${SETBY[a.s].short} · ${a.n}${SETBY[a.s].total?"/"+String(SETBY[a.s].total).padStart(3,"0"):""}</span></button><span class="pr">${a.p!=null?fmt(a.p):"sem anúncio"}</span></div>`}).join(""):`<div class="empty"><b>Coleção completa</b>Não falta nenhuma carta nesta seleção.</div>`;
   renderLot()}
 function selTotal(){let s=0,n=0,unknown=0;for(const k of state.sel){const [sid,num]=k.split("|");const p=price(sid,num);n++;if(p==null)unknown++;else s+=p}return {s,n,unknown}}
 function verdict(ask,ref){if(!(ask>0)||!(ref>0))return "";const d=(ask-ref)/ref*100;
@@ -94,7 +97,7 @@ function openCard(k){sheetKey=k;const [sid,n]=k.split("|");const s=SETBY[sid];co
   const num=n+(s.total?"/"+String(s.total).padStart(3,"0"):"");
   const ligaName=en+" ("+(s.total?num:n+"/∞")+")";
   const url="https://www.ligapokemon.com.br/?view=cards/card&card="+encodeURIComponent(ligaName)+"&ed="+sid+"&num="+n;
-  let h=`<div class="cardtop"><span class="thumb" style="${thumbStyle(sid,idx)}"></span><div><div class="en">${s.name} · ${num}</div><h3>${pt||en}</h3>${pt&&pt!==en?`<div class="en">${en}</div>`:""}<span class="tag ${o?"own":"miss"}">${o?"No fichário":"Falta"}</span></div></div><dl class="kv"><dt>Menor preço na Liga hoje</dt><dd>${fmt(p)}</dd>`;
+  let h=`<div class="cardtop"><span class="thumb ${o?"":"ghost"}" style="${thumbStyle(sid,idx)}"></span><div><div class="set">${s.name} · ${num}</div><h3>${pt||en}</h3>${pt&&pt!==en?`<div class="en">${en}</div>`:""}<div class="status ${o?"own":"miss"}"><i></i>${o?"Você tem esta carta":"Você ainda não tem esta carta"}</div></div></div><dl class="kv"><dt>Menor preço na Liga hoje</dt><dd>${fmt(p)}</dd>`;
   if(o){h+=o.paid!=null?`<dt>Você pagou (${br(o.d)})</dt><dd>${fmt(o.paid)}</dd>`:`<dt>Valor em ${br(state.bdate)}</dt><dd>${fmt(b)}</dd>`;
     if(p!=null&&b){const d=p-b;h+=`<dt>Variação</dt><dd class="${d>0.004?"up":d<-0.004?"down":"flat"}">${d>=0?"+":"−"}${fmt(Math.abs(d))} (${pct(d/b*100)})</dd>`}}
   h+=`</dl>`;

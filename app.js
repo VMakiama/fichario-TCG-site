@@ -175,3 +175,17 @@ $("#gate-form").addEventListener("submit",async e=>{e.preventDefault();const ema
 $("#logout").addEventListener("click",async()=>{await sb.auth.signOut();location.reload()});
 sb.auth.getSession().then(({data})=>{if(data.session){showGate(false);load()}else showGate(true)});
 sb.auth.onAuthStateChange((ev,session)=>{if(ev==="SIGNED_IN"&&session&&!state.ready){showGate(false);load()}});
+
+/* Setas para navegar pela barra de coleções (Fichário e Comprar) */
+(function(){const ico=d=>`<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg></i>`;
+  function chipNav(el){if(!el||el.parentNode.classList.contains("chipnav"))return;
+    const w=document.createElement("div");w.className="chipnav";el.parentNode.insertBefore(w,el);w.appendChild(el);
+    const mk=(cls,label,d,dir)=>{const b=document.createElement("button");b.type="button";b.className="arr "+cls;b.setAttribute("aria-label",label);b.innerHTML=ico(d);b.hidden=true;
+      b.addEventListener("click",()=>el.scrollBy({left:dir*Math.max(160,el.clientWidth*.7),behavior:"smooth"}));w.appendChild(b);return b};
+    const prev=mk("prev","Coleções anteriores","M15 18l-6-6 6-6",-1),next=mk("next","Próximas coleções","M9 6l6 6-6 6",1);
+    const upd=()=>{const max=el.scrollWidth-el.clientWidth;prev.hidden=!(el.clientWidth&&el.scrollLeft>4);next.hidden=!(el.clientWidth&&el.scrollLeft<max-4)};
+    const reveal=()=>{const a=el.querySelector('[aria-pressed="true"]');if(!a||!el.clientWidth)return;const l=a.offsetLeft-el.offsetLeft,r=l+a.offsetWidth,pad=56;
+      if(l<el.scrollLeft+pad||r>el.scrollLeft+el.clientWidth-pad)el.scrollTo({left:l-(el.clientWidth-a.offsetWidth)/2,behavior:"smooth"})};
+    el.addEventListener("scroll",upd,{passive:true});window.addEventListener("resize",upd);
+    new MutationObserver(()=>{reveal();upd()}).observe(el,{childList:true});upd()}
+  chipNav($("#setchips"));chipNav($("#wchips"))})();

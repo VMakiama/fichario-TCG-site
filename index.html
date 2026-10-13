@@ -110,6 +110,17 @@ h2{font-stretch:112%;font-weight:700;font-size:17px;letter-spacing:-.005em;margi
 .chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:13.5px;font-weight:600;color:var(--ink-2);white-space:nowrap}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .chip .n{opacity:.6;font-weight:600;margin-left:4px}
+/* Setas da barra de coleções: aparecem só quando há chips escondidos daquele lado */
+.chipnav{position:relative;margin-inline:-16px;min-width:0}
+.chipnav .chips{margin-inline:0;scroll-behavior:smooth;scroll-padding-inline:56px}
+.chipnav .arr{position:absolute;top:0;bottom:0;z-index:2;width:60px;display:flex;align-items:center;border:0;padding:0 10px;cursor:pointer;color:var(--ink)}
+.chipnav .arr.prev{left:0;justify-content:flex-start;background:linear-gradient(to right,var(--bg) 45%,transparent)}
+.chipnav .arr.next{right:0;justify-content:flex-end;background:linear-gradient(to left,var(--bg) 45%,transparent)}
+.chipnav .arr i{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.12);transition:transform .15s}
+.chipnav .arr:hover i{transform:scale(1.08)}
+.chipnav .arr:focus-visible{outline:none}
+.chipnav .arr:focus-visible i{outline:2px solid var(--ink);outline-offset:2px}
+.chipnav .arr svg{width:16px;height:16px}
 .searchrow{display:grid;grid-template-columns:1fr;gap:8px}
 @media (min-width:560px){.searchrow{grid-template-columns:minmax(0,1fr) auto}}
 .search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;color:var(--ink-3)}
